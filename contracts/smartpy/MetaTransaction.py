@@ -1,8 +1,18 @@
 import smartpy as sp
 
 # Type aliases
-blake2b_hash = sp.TBytes
-permitKey = sp.TRecord(address=sp.TAddress, param_hash=blake2b_hash)
+# This stores all the relevant info to prevent replay attacks
+# NOTE: The hash is an assimilation of user's counter, target contract addr, blake2b of params and
+# chain id
+permitKey = sp.TRecord(address=sp.TAddress, param_hash=sp.TBytes)
+
+# NOTE about the `spSender` variable
+# spSender - Provides information about the current execution context, including the
+# sender of the transaction. While these are generally available via
+# sp.sender, they should not be accessed in such a direct
+# manner, since when dealing with meta-transactions the account sending and
+# paying for execution may not be the actual sender (as far as an application
+# is concerned).
 
 
 class MetaTransaction(sp.Contract):
@@ -27,15 +37,14 @@ class MetaTransaction(sp.Contract):
 
     def store_permit(self, address, param_hash):
         rec = sp.record(address=address, param_hash=param_hash)
+        sp.verify(
+            ~self.data.permits.contains(rec),
+            "Params already executed"
+        )
         self.data.permits[rec] = True
 
     def get_address_from_pub_key(self, pub_key):
         return sp.to_address(sp.implicit_account(sp.hash_key(pub_key)))
-    
-    def get_sender(self, pub_key):
-        sp.if pub_key:
-            return self.get_address_from_pub_key(key)
-        return sp.sender
 
     def check_meta_tx_validity(self, key, signature, param_hash):
         address = self.get_address_from_pub_key(key)
@@ -52,7 +61,7 @@ class MetaTransaction(sp.Contract):
             sp.check_signature(key, signature, data),
             "MISSIGNED"
         )
-        self.store_permit(address, data)
+        self.store_permit(address, sp.blake2b(data))
         self.increment_counter(address)
 
     # Update the implementation of functions to add meta-tx support
@@ -71,8 +80,12 @@ class MetaTransaction(sp.Contract):
                 # Check if sig, key is present;
                 # If so, validate meta_tx
                 sp.if params.key.is_some() | params.sig.is_some():
+                    self.baseContract.data.spSender = self.get_address_from_pub_key(
+                        key)
                     param_hash = sp.blake2b(sp.pack(params.params))
                     self.check_meta_tx_validity(key, sig, param_hash)
+                sp.else:
+                    self.baseContract.data.spSender = sp.sender
 
                 # Original fn implementation
                 f.addedMessage.f(self.baseContract, params.params)
