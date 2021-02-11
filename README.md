@@ -26,3 +26,20 @@ Smart Contract will then
 Once the above criteria are met, the rest of the function logic originally coded by DApp developer is invoked as-is.
 
 # Tests
+
+**1. SmartPy CLI:**
+Install smartpy cli following the instructions [here](https://smartpy.io/reference.html#_installation)
+
+```
+~/smartpy-cli/SmartPy.sh test ./contracts/smartpy/examples/Quote.py ./output
+```
+
+**2. SmartPyIDE:**
+
+- Go to [SmartPy IDE](https://smartpy.io/ide)
+- Click on `CREATE CONTRACT`.
+- Type in `MetaTxnTemplate`
+- Copy and paste the code from [here](./contracts/MetaTransaction.py)
+- Create another contract named `Quote`
+- Copy and paste the code from [here](./contracts/examples/Quote.py)
+- Next, click on `RUN` button
