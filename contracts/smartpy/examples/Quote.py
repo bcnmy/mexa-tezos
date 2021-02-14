@@ -10,19 +10,19 @@ MetaTxnTemplate = sp.import_stored_contract(name="MetaTxnTemplate")
 
 class Quote(sp.Contract):
     def __init__(self):
+        self.sp_sender = sp.address("tz123")
         self.init(
             quote="",
-            owner=sp.address("tz123"),
-            spSender=sp.address("tz123")
+            owner=sp.address("tz123")
         )
 
     @sp.entry_point
     def set_quote(self, new_quote):
         self.data.quote = new_quote
-        self.data.owner = self.data.spSender
+        self.data.owner = self.sp_sender
 
 
-@sp.add_test(name="MetaTransaction")
+@sp.add_test(name="QuoteMetaTransaction")
 def test():
     alice = sp.test_account("Alice")
     bob = sp.test_account("Bob")
@@ -41,22 +41,24 @@ def test():
     scenario.h1("Quote DApp using Native Meta Transaction")
     quote = Quote()
     scenario.register(quote, show=False)
-    quote_with_meta_tx = MetaTxnTemplate.MetaTransaction(baseContract=quote)
+    quote_with_meta_tx = MetaTxnTemplate.MetaTransaction(base_contract=quote)
     scenario += quote_with_meta_tx
 
     # Test Case - 1
-    quote_value = "The biggest adventure you can ever take is to live the life of your dreams - Oprah"
     scenario.h3("Alice sends a set quote request on her own")
+    quote_value = "The biggest adventure you can ever take is to live the life of your dreams - Oprah"
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
-        key=sp.none,
+        pub_key=sp.none,
         sig=sp.none
     ).run(sender=alice, chain_id=chainId)
-    scenario.verify_equal(quote_with_meta_tx.data.baseState.quote, quote_value)
     scenario.verify_equal(
-        quote_with_meta_tx.data.baseState.owner, alice.address)
+        quote_with_meta_tx.data.base_state.quote, quote_value)
+    scenario.verify_equal(
+        quote_with_meta_tx.data.base_state.owner, alice.address)
 
     # Test Case - 2
+    scenario.h3("Bob sends a Quote on behalf of Alice")
     quote_value = "Building a mission and building a business go hand in hand - Zuckerberg"
     paramHash = sp.blake2b(sp.pack(quote_value))
     data = sp.pack(sp.record(
@@ -67,15 +69,15 @@ def test():
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
 
-    scenario.h3("Bob sends a Quote on behalf of Alice")
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
-        key=sp.some(alice.public_key),
+        pub_key=sp.some(alice.public_key),
         sig=sp.some(sig)
-    ).run(sender=bob, chain_id=chainId, now=sp.timestamp("15665656"))
-    scenario.verify_equal(quote_with_meta_tx.data.baseState.quote, quote_value)
+    ).run(sender=bob, chain_id=chainId)
     scenario.verify_equal(
-        quote_with_meta_tx.data.baseState.owner, alice.address)
+        quote_with_meta_tx.data.base_state.quote, quote_value)
+    scenario.verify_equal(
+        quote_with_meta_tx.data.base_state.owner, alice.address)
 
     # Test Case - 3
     # replay attack
@@ -83,12 +85,13 @@ def test():
         "Bob sends the Quote he sent previously on behalf of Alice, replay attack")
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
-        key=sp.some(alice.public_key),
+        pub_key=sp.some(alice.public_key),
         sig=sp.some(sig)
-    ).run(sender=bob, chain_id=chainId, now=sp.timestamp("15665656"), valid=False)
+    ).run(sender=bob, chain_id=chainId, valid=False)
 
     # Test Case - 4
     # pubkey mismatch
+    scenario.h3("Alice signs an invalid quote request, pubKey mismatch")
     quote_value = "Failure is simply the opportunity to begin again, this time more intelligently - Ford"
     paramHash = sp.blake2b(sp.pack(quote_value))
     data = sp.pack(sp.record(
@@ -99,15 +102,15 @@ def test():
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
 
-    scenario.h3("Alice signs an invalid quote request, pubKey mismatch")
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
-        key=sp.some(bob.public_key),
+        pub_key=sp.some(bob.public_key),
         sig=sp.some(sig)
-    ).run(sender=bob, chain_id=chainId, now=sp.timestamp("15665656"), valid=False)
+    ).run(sender=bob, chain_id=chainId, valid=False)
 
     # Test Case - 5
     # chainId mismatch
+    scenario.h3("Alice signs a invalid quote request, chainId mismatch")
     quote_value = "He who is not everyday conquering some fear has not learned the secret of life - R W Emerson"
     paramHash = sp.blake2b(sp.pack(quote_value))
     data = sp.pack(sp.record(
@@ -118,15 +121,15 @@ def test():
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
 
-    scenario.h3("Alice signs a invalid quote request, chainId mismatch")
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
-        key=sp.some(alice.public_key),
+        pub_key=sp.some(alice.public_key),
         sig=sp.some(sig)
-    ).run(sender=bob, chain_id=chainId, now=sp.timestamp("15665656"), valid=False)
+    ).run(sender=bob, chain_id=chainId, valid=False)
 
     # Test Case - 6
     # counter mismatch
+    scenario.h3("Alice signs an invalid quote request, counter mismatch")
     quote_value = "An entrepreneur is someone who jumps off a cliff and builds a plane on the way down - R Hoffman"
     paramHash = sp.blake2b(sp.pack(quote_value))
     data = sp.pack(sp.record(
@@ -137,9 +140,28 @@ def test():
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
 
-    scenario.h3("Alice signs an invalid quote request, counter mismatch")
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
-        key=sp.some(alice.public_key),
+        pub_key=sp.some(alice.public_key),
         sig=sp.some(sig)
-    ).run(sender=bob, chain_id=chainId, now=sp.timestamp("15665656"), valid=False)
+    ).run(sender=bob, chain_id=chainId, valid=False)
+
+    # Test Case - 7
+    # contract address mismatch
+    scenario.h3(
+        "Alice signs an invalid quote request, contract address mismatch")
+    quote_value = "I have not failed. I’ve just found 10,000 ways that won’t work - Edison"
+    paramHash = sp.blake2b(sp.pack(quote_value))
+    data = sp.pack(sp.record(
+        chain_id=chainId,
+        contract_addr=sp.address("KT1CAPu1KdZEH2jdqz82NQztoWSf2Zn58MX4"),
+        counter=165675656,
+        param_hash=paramHash
+    ))
+    sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
+
+    scenario += quote_with_meta_tx.set_quote(
+        params=quote_value,
+        pub_key=sp.some(alice.public_key),
+        sig=sp.some(sig)
+    ).run(sender=bob, chain_id=chainId, valid=False)
