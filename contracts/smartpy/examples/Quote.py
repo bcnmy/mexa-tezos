@@ -1,11 +1,11 @@
 import smartpy as sp
 
 # Import from URL
-# meta_tx_contract_url = "https://raw.githubusercontent.com/bcnmy/mexa-tezos/dev/contracts/smartpy/MetaTransaction.py"
-# MetaTxnTemplate = sp.import_script_from_url(url=meta_tx_contract_url)
+meta_tx_contract_url = "https://raw.githubusercontent.com/bcnmy/mexa-tezos/dev/contracts/smartpy/MetaTransaction.py"
+MetaTxnTemplate = sp.import_script_from_url(url=meta_tx_contract_url)
 
 # Import from smartPy named contract
-MetaTxnTemplate = sp.import_stored_contract(name="MetaTxnTemplate")
+# MetaTxnTemplate = sp.import_stored_contract(name="MetaTxnTemplate")
 
 
 class Quote(sp.Contract):
@@ -50,7 +50,7 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.none,
-        sig=sp.none
+        signature=sp.none
     ).run(sender=alice, chain_id=chainId)
     scenario.verify_equal(
         quote_with_meta_tx.data.base_state.quote, quote_value)
@@ -72,7 +72,7 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        sig=sp.some(sig)
+        signature=sp.some(sig)
     ).run(sender=bob, chain_id=chainId)
     scenario.verify_equal(
         quote_with_meta_tx.data.base_state.quote, quote_value)
@@ -86,7 +86,7 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        sig=sp.some(sig)
+        signature=sp.some(sig)
     ).run(sender=bob, chain_id=chainId, valid=False)
 
     # Test Case - 4
@@ -105,7 +105,7 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(bob.public_key),
-        sig=sp.some(sig)
+        signature=sp.some(sig)
     ).run(sender=bob, chain_id=chainId, valid=False)
 
     # Test Case - 5
@@ -124,7 +124,7 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        sig=sp.some(sig)
+        signature=sp.some(sig)
     ).run(sender=bob, chain_id=chainId, valid=False)
 
     # Test Case - 6
@@ -143,7 +143,7 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        sig=sp.some(sig)
+        signature=sp.some(sig)
     ).run(sender=bob, chain_id=chainId, valid=False)
 
     # Test Case - 7
@@ -163,5 +163,5 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        sig=sp.some(sig)
+        signature=sp.some(sig)
     ).run(sender=bob, chain_id=chainId, valid=False)

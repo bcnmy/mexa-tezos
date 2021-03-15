@@ -1,7 +1,7 @@
 import smartpy as sp
 
-# NOTE about the `spSender` variable
-# spSender - Provides information about the current execution context, including the
+# NOTE about the `sp_sender` variable
+# sp_sender - Provides information about the current execution context, including the
 # sender of the transaction. While these are generally available via
 # sp.sender, they should not be accessed in such a direct
 # manner, since when dealing with meta-transactions the account sending and
@@ -55,10 +55,8 @@ class MetaTransaction(sp.Contract):
                 self.base_contract.data = self.data.base_state
 
                 # Add sig and key, optional parameters
-                sp.set_type(params.sig, sp.TOption(sp.TSignature))
-                sig = params.sig.open_some()
+                sp.set_type(params.signature, sp.TOption(sp.TSignature))
                 sp.set_type(params.pub_key, sp.TOption(sp.TKey))
-                pub_key = params.pub_key.open_some()
 
                 # Original params without pub_key, sig
                 ep_params = params.params
@@ -67,11 +65,14 @@ class MetaTransaction(sp.Contract):
 
                 # Check if sig, key is present;
                 # If so, validate meta_tx
-                sp.if params.pub_key.is_some() | params.sig.is_some():
+                # Adjust sp_sender to the actual sender of meta tx
+                sp.if params.pub_key.is_some() | params.signature.is_some():
+                    pub_key = params.pub_key.open_some()
+                    signature = params.signature.open_some()
                     sp_sender.value = self.get_address_from_pub_key(
                         pub_key)
                     param_hash = sp.blake2b(sp.pack(ep_params))
-                    self.check_meta_tx_validity(pub_key, sig, param_hash)
+                    self.check_meta_tx_validity(pub_key, signature, param_hash)
                 
                 self.base_contract.sp_sender = sp_sender.value
 
