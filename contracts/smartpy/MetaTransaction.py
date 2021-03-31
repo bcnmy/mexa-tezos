@@ -29,8 +29,8 @@ class MetaTransaction(sp.Contract):
     def get_address_from_pub_key(self, pub_key):
         return sp.to_address(sp.implicit_account(sp.hash_key(pub_key)))
 
-    def check_meta_tx_validity(self, key, signature, expires_at, param_hash):
-        sp.verify(sp.now <= expires_at, "META_TX_EXPIRED")
+    def check_meta_tx_validity(self, key, signature, tx_expiry_time, param_hash):
+        sp.verify(sp.now <= tx_expiry_time, "META_TX_EXPIRED")
 
         address = self.get_address_from_pub_key(key)
         counter = self.get_counter(address)
@@ -39,7 +39,7 @@ class MetaTransaction(sp.Contract):
                 chain_id=sp.chain_id,
                 contract_addr=sp.self_address,
                 counter=counter,
-                expires_at=expires_at,
+                tx_expiry_time=tx_expiry_time,
                 param_hash=param_hash
             )
         )
@@ -58,9 +58,9 @@ class MetaTransaction(sp.Contract):
                 self.base_contract.data = self.data.base_state
 
                 # Add sig and key, optional parameters
-                sp.set_type(params.signature, sp.TOption(sp.TSignature))
+                sp.set_type(params.sig, sp.TOption(sp.TSignature))
                 sp.set_type(params.pub_key, sp.TOption(sp.TKey))
-                sp.set_type(params.expires_at, sp.TOption(sp.TTimestamp))
+                sp.set_type(params.tx_expiry_time, sp.TOption(sp.TTimestamp))
 
                 # Original params without pub_key, sig
                 ep_params = params.params
@@ -70,15 +70,15 @@ class MetaTransaction(sp.Contract):
                 # Check if sig, key is present;
                 # If so, validate meta_tx
                 # Adjust sp_sender to the actual sender of meta tx
-                sp.if params.pub_key.is_some() | params.signature.is_some():
+                sp.if params.pub_key.is_some() | params.sig.is_some():
                     pub_key = params.pub_key.open_some()
-                    signature = params.signature.open_some()
-                    expires_at = params.expires_at.open_some()
+                    signature = params.sig.open_some()
+                    tx_expiry_time = params.tx_expiry_time.open_some()
 
                     sp_sender.value = self.get_address_from_pub_key(
                         pub_key)
                     param_hash = sp.blake2b(sp.pack(ep_params))
-                    self.check_meta_tx_validity(pub_key, signature, expires_at, param_hash)
+                    self.check_meta_tx_validity(pub_key, signature, tx_expiry_time, param_hash)
                 
                 self.base_contract.sp_sender = sp_sender.value
 

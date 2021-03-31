@@ -1,7 +1,7 @@
 import smartpy as sp
 
 # Import from URL
-meta_tx_contract_url = "https://ipfs.io/ipfs/QmPFLEhhy9JDHV6MAtDJQbbNBdQxa361Cmwp2xCvHZtJfP"
+meta_tx_contract_url = "https://ipfs.io/ipfs/QmVS6JXzAyPEfxgSK68Mi69wXgwocksqrysasay5QcjhMm"
 MetaTxnTemplate = sp.import_script_from_url(url=meta_tx_contract_url)
 
 # Import from smartPy named contract
@@ -52,8 +52,8 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.none,
-        signature=sp.none,
-        expires_at=sp.none
+        sig=sp.none,
+        tx_expiry_time=sp.none
     ).run(sender=alice, chain_id=chainId, now=sp.timestamp(0))
     scenario.verify_equal(
         quote_with_meta_tx.data.base_state.quote, quote_value)
@@ -64,12 +64,12 @@ def test():
     scenario.h3("Bob sends a Quote on behalf of Alice")
     quote_value = "Building a mission and building a business go hand in hand - Zuckerberg"
     paramHash = sp.blake2b(sp.pack(quote_value))
-    expires_at = sp.timestamp(1).add_minutes(FIVE_MINS)
+    tx_expiry_time = sp.timestamp(1).add_minutes(FIVE_MINS)
     data = sp.pack(sp.record(
         chain_id=chainId,
         contract_addr=quote_with_meta_tx.address,
         counter=0,
-        expires_at=expires_at,
+        tx_expiry_time=tx_expiry_time,
         param_hash=paramHash
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
@@ -77,8 +77,8 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        signature=sp.some(sig),
-        expires_at=sp.some(expires_at)
+        sig=sp.some(sig),
+        tx_expiry_time=sp.some(tx_expiry_time)
     ).run(sender=bob, chain_id=chainId, now=sp.timestamp(1))
     scenario.verify_equal(
         quote_with_meta_tx.data.base_state.quote, quote_value)
@@ -92,8 +92,8 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        signature=sp.some(sig),
-        expires_at=sp.some(expires_at)
+        sig=sp.some(sig),
+        tx_expiry_time=sp.some(tx_expiry_time)
     ).run(sender=bob, chain_id=chainId, now=sp.timestamp(1), valid=False)
 
     # Test Case - 4
@@ -101,12 +101,12 @@ def test():
     scenario.h3("Alice signs an invalid quote request, pubKey mismatch")
     quote_value = "Failure is simply the opportunity to begin again, this time more intelligently - Ford"
     paramHash = sp.blake2b(sp.pack(quote_value))
-    expires_at = sp.timestamp(2).add_minutes(FIVE_MINS)
+    tx_expiry_time = sp.timestamp(2).add_minutes(FIVE_MINS)
     data = sp.pack(sp.record(
         chain_id=chainId,
         contract_addr=quote_with_meta_tx.address,
         counter=1,
-        expires_at=expires_at,
+        tx_expiry_time=tx_expiry_time,
         param_hash=paramHash
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
@@ -114,8 +114,8 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(bob.public_key),
-        signature=sp.some(sig),
-        expires_at=sp.some(expires_at)
+        sig=sp.some(sig),
+        tx_expiry_time=sp.some(tx_expiry_time)
     ).run(sender=bob, chain_id=chainId, now = sp.timestamp(2), valid=False)
 
     # Test Case - 5
@@ -123,12 +123,12 @@ def test():
     scenario.h3("Alice signs a invalid quote request, chainId mismatch")
     quote_value = "He who is not everyday conquering some fear has not learned the secret of life - R W Emerson"
     paramHash = sp.blake2b(sp.pack(quote_value))
-    expires_at = sp.timestamp(3).add_minutes(FIVE_MINS)
+    tx_expiry_time = sp.timestamp(3).add_minutes(FIVE_MINS)
     data = sp.pack(sp.record(
         chain_id=1,
         contract_addr=quote_with_meta_tx.address,
         counter=1,
-        expires_at=expires_at,
+        tx_expiry_time=tx_expiry_time,
         param_hash=paramHash
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
@@ -136,8 +136,8 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        signature=sp.some(sig),
-        expires_at=sp.some(expires_at)
+        sig=sp.some(sig),
+        tx_expiry_time=sp.some(tx_expiry_time)
     ).run(sender=bob, chain_id=chainId, now = sp.timestamp(3), valid=False)
 
     # Test Case - 6
@@ -145,12 +145,12 @@ def test():
     scenario.h3("Alice signs an invalid quote request, counter mismatch")
     quote_value = "An entrepreneur is someone who jumps off a cliff and builds a plane on the way down - R Hoffman"
     paramHash = sp.blake2b(sp.pack(quote_value))
-    expires_at = sp.timestamp(4).add_minutes(FIVE_MINS)
+    tx_expiry_time = sp.timestamp(4).add_minutes(FIVE_MINS)
     data = sp.pack(sp.record(
         chain_id=chainId,
         contract_addr=quote_with_meta_tx.address,
         counter=165675656,
-        expires_at=expires_at,
+        tx_expiry_time=tx_expiry_time,
         param_hash=paramHash
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
@@ -158,8 +158,8 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        signature=sp.some(sig),
-        expires_at=sp.some(expires_at)
+        sig=sp.some(sig),
+        tx_expiry_time=sp.some(tx_expiry_time)
     ).run(sender=bob, chain_id=chainId, now = sp.timestamp(4), valid=False)
 
     # Test Case - 7
@@ -168,12 +168,12 @@ def test():
         "Alice signs an invalid quote request, contract address mismatch")
     quote_value = "I have not failed. I’ve just found 10,000 ways that won’t work - Edison"
     paramHash = sp.blake2b(sp.pack(quote_value))
-    expires_at = sp.timestamp(5).add_minutes(FIVE_MINS)
+    tx_expiry_time = sp.timestamp(5).add_minutes(FIVE_MINS)
     data = sp.pack(sp.record(
         chain_id=chainId,
         contract_addr=sp.address("KT1CAPu1KdZEH2jdqz82NQztoWSf2Zn58MX4"),
         counter=1,
-        expires_at=expires_at,
+        tx_expiry_time=tx_expiry_time,
         param_hash=paramHash
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
@@ -181,8 +181,8 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        signature=sp.some(sig),
-        expires_at=sp.some(expires_at)
+        sig=sp.some(sig),
+        tx_expiry_time=sp.some(tx_expiry_time)
     ).run(sender=bob, chain_id=chainId, now = sp.timestamp(5), valid=False)
 
 
@@ -192,12 +192,12 @@ def test():
         "Alice signs an invalid quote request, meta txn signature expired")
     quote_value = "I have not failed. I’ve just found 10,000 ways that won’t work - Edison"
     paramHash = sp.blake2b(sp.pack(quote_value))
-    expires_at = sp.timestamp(6).add_minutes(FIVE_MINS)
+    tx_expiry_time = sp.timestamp(6).add_minutes(FIVE_MINS)
     data = sp.pack(sp.record(
         chain_id=chainId,
         contract_addr=quote_with_meta_tx.address,
         counter=1,
-        expires_at=expires_at,
+        tx_expiry_time=tx_expiry_time,
         param_hash=paramHash
     ))
     sig = sp.make_signature(alice.secret_key, data, message_format='Raw')
@@ -205,6 +205,6 @@ def test():
     scenario += quote_with_meta_tx.set_quote(
         params=quote_value,
         pub_key=sp.some(alice.public_key),
-        signature=sp.some(sig),
-        expires_at=sp.some(expires_at)
-    ).run(sender=bob, chain_id=chainId, now = expires_at.add_seconds(10), valid=False)
+        sig=sp.some(sig),
+        tx_expiry_time=sp.some(tx_expiry_time)
+    ).run(sender=bob, chain_id=chainId, now = tx_expiry_time.add_seconds(10), valid=False)
